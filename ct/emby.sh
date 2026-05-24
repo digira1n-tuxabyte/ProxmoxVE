@@ -30,21 +30,37 @@ function update_script() {
     msg_error "No ${APP} Installation Found!"
     exit
   fi
-  if check_for_gh_release "emby" "MediaBrowser/Emby.Releases"; then
-    msg_info "Stopping Service"
-    systemctl stop emby-server
-    msg_ok "Stopped Service"
 
-    fetch_and_deploy_gh_release "emby" "MediaBrowser/Emby.Releases" "binary"
+  msg_info "Finding the latest Emby Beta release..."
+  # Query the GitHub API for the latest pre-release tag (beta)
+  BETA_TAG=$(curl -s https://api.github.com/repos/MediaBrowser/Emby.Releases/releases | grep -m 1 -B 2 '"prerelease": true' | grep '"tag_name":' | cut -d '"' -f 4)
 
-    msg_info "Starting Service"
-    systemctl start emby-server
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
+  if [[ -z "$BETA_TAG" ]]; then
+    msg_error "Could not find a beta release."
+    exit
   fi
+  
+  msg_ok "Found Beta version: ${BETA_TAG}"
+
+  msg_info "Stopping Service"
+  systemctl stop emby-server
+  msg_ok "Stopped Service"
+
+  msg_info "Downloading Beta Release (${BETA_TAG})..."
+  # Download the specific Debian package for the beta tag
+  wget -q -O /tmp/emby-beta.deb "https://github.com/MediaBrowser/Emby.Releases/releases/download/${BETA_TAG}/emby-server-deb_${BETA_TAG}_amd64.deb"
+  
+  msg_info "Installing Beta Release..."
+  dpkg -i /tmp/emby-beta.deb
+  rm /tmp/emby-beta.deb
+  msg_ok "Installed Emby Beta"
+
+  msg_info "Starting Service"
+  systemctl start emby-server
+  msg_ok "Started Service"
+  msg_ok "Updated successfully to Beta!"
   exit
 }
-
 start
 build_container
 description
