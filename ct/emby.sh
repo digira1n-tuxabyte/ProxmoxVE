@@ -33,7 +33,7 @@ function update_script() {
 
   msg_info "Finding the latest Emby Beta release..."
   # Query the GitHub API for the latest pre-release tag (beta)
-  BETA_TAG=$(curl -s https://api.github.com/repos/MediaBrowser/Emby.Releases/releases | grep -m 1 -B 2 '"prerelease": true' | grep '"tag_name":' | cut -d '"' -f 4)
+  BETA_TAG=$(curl -s https://api.github.com/repos/MediaBrowser/Emby.Releases/releases | grep -E '"tag_name":|"prerelease":' | grep -B 1 '"prerelease": true' | head -n 1 | cut -d '"' -f 4)
 
   if [[ -z "$BETA_TAG" ]]; then
     msg_error "Could not find a beta release."
